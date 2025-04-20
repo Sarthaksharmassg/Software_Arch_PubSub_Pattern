@@ -6,19 +6,17 @@ import time
 # Global variable to store current user info
 current_user = {"username": "", "role": ""}
 
-# Mario animation class (unchanged)
+
 class MarioAnimation:
     def __init__(self, parent, image_path):
         self.parent = parent
         self.canvas = None
         self.jump_timer = None
         self.current_label = None
-        
-        # Load the Mario image
         self.mario_image = tk.PhotoImage(file=image_path)
         
-        # Scale image down if it's too large (optional)
-        width, height = 30, 30  # Desired size
+        # Scale image down
+        width, height = 30, 30 
         self.mario_image = self.mario_image.subsample(self.mario_image.width() // width, 
                                                       self.mario_image.height() // height)
         
@@ -26,8 +24,7 @@ class MarioAnimation:
         # If already attached to this label, do nothing
         if self.current_label == label:
             return
-            
-        # Remove from previous location if any
+
         if self.canvas:
             self.canvas.destroy()
             
@@ -48,7 +45,7 @@ class MarioAnimation:
                                                 self.mario_image.height()//2, 
                                                 image=self.mario_image)
         
-        # Start jumping animation
+
         self.start_jumping()
     
     def detach(self):
@@ -64,24 +61,21 @@ class MarioAnimation:
         self.current_label = None
     
     def start_jumping(self):
-        # Initial position
         self.y_pos = 0
         self.going_up = True
-        
-        # Start the jump loop
+        # jump loop
         self.do_jump()
     
     def do_jump(self):
         if not self.canvas:
             return
-            
-        # Reduced jump height and speed
+
         if self.going_up:
-            self.y_pos -= 1.5  # Smaller jump (was -3)
-            if self.y_pos <= -5:  # Lower height (was -10)
+            self.y_pos -= 1.5
+            if self.y_pos <= -5: 
                 self.going_up = False
         else:
-            self.y_pos += 1.5  # Smaller jump (was +3)
+            self.y_pos += 1.5  
             if self.y_pos >= 0:  # Back to original position
                 self.going_up = True
                 
@@ -95,39 +89,33 @@ class MarioAnimation:
         self.jump_timer = self.parent.after(150, self.do_jump)  # Slower animation (was 100ms)
 
 
-# Function to show an image splash screen (unchanged)
+
 def show_splash_image(image_path, duration=2000, callback=None):
-    # Create a toplevel window
-    splash = tk.Toplevel()
-    splash.overrideredirect(True)  # Remove window decorations
+    # Create a panel in the root window for the splash image
+    splash_panel = tk.Frame(root)
+    splash_panel.place(x=0, y=0, relwidth=1, relheight=1)  # Cover the entire root window
     
-    # Calculate position to center the splash window
-    screen_width = root.winfo_screenwidth()
-    screen_height = root.winfo_screenheight()
-    
-    # Load the image
     try:
         img = tk.PhotoImage(file=image_path)
-        width, height = img.width(), img.height()
+        # Calculate scaling factors to fit the root window
+        win_width = root.winfo_width()
+        win_height = root.winfo_height()
         
-        # Center the window
-        x = (screen_width - width) // 2
-        y = (screen_height - height) // 2
-        splash.geometry(f"{width}x{height}+{x}+{y}")
+        # Create a canvas to display the scaled image
+        canvas = tk.Canvas(splash_panel, width=win_width, height=win_height, 
+                          highlightthickness=0)
+        canvas.pack(fill=tk.BOTH, expand=True)
         
-        # Display the image
-        label = tk.Label(splash, image=img)
-        label.image = img  # Keep a reference
-        label.pack()
-        
-        # Close after duration
-        splash.after(duration, lambda: close_splash(splash, callback))
+        # Create image on canvas stretched to fill the window
+        canvas.create_image(win_width//2, win_height//2, image=img, anchor=tk.CENTER)
+        canvas.img = img  # Keep a reference
+        root.after(duration, lambda: close_splash(splash_panel, callback))
         
     except Exception as e:
         print(f"Error loading image {image_path}: {e}")
+        splash_panel.destroy()
         if callback:
             callback()
-        return
 
 def close_splash(splash, callback=None):
     splash.destroy()
@@ -137,13 +125,11 @@ def close_splash(splash, callback=None):
 # Main window
 root = tk.Tk()
 root.title("Learning Management System")
-root.geometry("500x500")  # Made slightly larger to accommodate new features
+root.geometry("500x500")
 root.configure(bg="#FFB347") 
 
 # Create Mario animation controller
-mario = MarioAnimation(root, "mario.png")  # Use mario.png or mario.jpeg as needed
-
-# Create frames for different screens
+mario = MarioAnimation(root, "mario.png")
 login_frame = tk.Frame(root)
 signup_frame = tk.Frame(root)
 student_frame = tk.Frame(root)
@@ -151,7 +137,6 @@ instructor_frame = tk.Frame(root)
 subscription_frame = tk.Frame(root)
 view_subscriptions_frame = tk.Frame(root)
 
-# Function to show a frame and hide others
 def show_frame(frame):
     login_frame.pack_forget()
     signup_frame.pack_forget()
@@ -159,10 +144,12 @@ def show_frame(frame):
     instructor_frame.pack_forget()
     subscription_frame.pack_forget()
     view_subscriptions_frame.pack_forget()
-    mario.detach()  # Detach Mario when changing frames
+    mario.detach()  
+    if frame != login_frame and frame != signup_frame:
+        mario.detach()
     frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-# LOGIN SCREEN (unchanged)
+# LOGIN SCREEN
 tk.Label(login_frame, text="Learning Management System", font=("Arial", 14, "bold")).pack(pady=10)
 
 username_label = tk.Label(login_frame, text="Username:")
@@ -192,7 +179,7 @@ def handle_login():
     
     if not username or not password:
         messagebox.showerror("Error", "Please enter both username and password!")
-        show_splash_image("no_entry1.png", 2000)
+        show_splash_image("no_entry2.png", 2000)
         return
         
     response = client.send_request(f"LOGIN {username} {password}")
@@ -201,19 +188,18 @@ def handle_login():
         current_user["username"] = username
         current_user["role"] = response.split()[-1]
         
-        # Show welcome image before switching to appropriate frame
         if current_user["role"] == "student":
             show_splash_image("welcome1.png", 2000, lambda: show_frame(student_frame))
         else:
             show_splash_image("welcome1.png", 2000, lambda: show_frame(instructor_frame))
     else:
         messagebox.showerror("Login Failed", response)
-        show_splash_image("no_entry1.png", 2000)
+        show_splash_image("no_entry2.png", 2000)
 
 tk.Button(login_frame, text="Login", command=handle_login).pack(pady=10)
 tk.Button(login_frame, text="Sign Up", command=lambda: show_frame(signup_frame)).pack(pady=5)
 
-# SIGNUP SCREEN (unchanged)
+# SIGNUP SCREEN
 tk.Label(signup_frame, text="Create Account", font=("Arial", 14, "bold")).pack(pady=10)
 
 signup_username_label = tk.Label(signup_frame, text="Username:")
@@ -242,7 +228,7 @@ def handle_signup():
     
     if not username or not password:
         messagebox.showerror("Error", "Please enter all fields!")
-        show_splash_image("no_entry1.png", 2000)
+        show_splash_image("no_entry2.png", 2000)
         return
         
     response = client.send_request(f"REGISTER {role} {username} {password}")
@@ -254,7 +240,7 @@ def handle_signup():
 tk.Button(signup_frame, text="Sign Up", command=handle_signup).pack(pady=10)
 tk.Button(signup_frame, text="Back to Login", command=lambda: show_frame(login_frame)).pack(pady=5)
 
-# STUDENT DASHBOARD (updated)
+# STUDENT DASHBOARD
 def student_welcome_label():
     welcome_label = tk.Label(student_frame, text=f"Welcome, Student {current_user['username']}!", font=("Arial", 14, "bold"))
     welcome_label.pack(pady=10)
@@ -264,7 +250,6 @@ def student_welcome_label():
 welcome_label_student = student_welcome_label()
 
 def view_courses():
-    # Create a simple pop-up window to display courses
     courses_window = tk.Toplevel(root)
     courses_window.title("All Courses")
     courses_window.geometry("300x250")
@@ -282,17 +267,15 @@ def view_courses():
         for i, course in enumerate(courses, 1):
             text_area.insert(tk.END, f"{i}. {course}\n")
             
-    text_area.config(state=tk.DISABLED)  # Make it read-only
+    text_area.config(state=tk.DISABLED)  # read-only
     mario.detach()
     tk.Button(courses_window, text="Close", command=courses_window.destroy).pack(pady=10)
 
 def get_resources():
-    # Create a simple pop-up window to get resources
     resources_window = tk.Toplevel(root)
     resources_window.title("Get Course Resources")
     resources_window.geometry("300x300")
-    
-    # Course ID label and entry
+
     course_id_label = tk.Label(resources_window, text="Enter Course ID:")
     course_id_label.pack(pady=10)
     
@@ -323,14 +306,11 @@ def get_resources():
     tk.Button(resources_window, text="Search", command=search_resources).pack(pady=5)
     tk.Button(resources_window, text="Close", command=resources_window.destroy).pack(pady=5)
 
-# New function: Subscribe to a course
 def subscribe_to_course():
-    # Create subscription window
     subscription_window = tk.Toplevel(root)
     subscription_window.title("Subscribe to Course")
     subscription_window.geometry("300x200")
     
-    # Course ID label and entry
     course_id_label = tk.Label(subscription_window, text="Enter Course ID to Subscribe:")
     course_id_label.pack(pady=10)
     
@@ -352,16 +332,12 @@ def subscribe_to_course():
     tk.Button(subscription_window, text="Subscribe", command=handle_subscription).pack(pady=10)
     tk.Button(subscription_window, text="Cancel", command=subscription_window.destroy).pack(pady=5)
 
-# New function: View subscribed courses and new resources
 def view_subscriptions():
-    # Get subscribed courses
+
     response = client.send_request(f"GET_SUBSCRIBED_COURSES {current_user['username']}")
-    
     if "No subscribed" in response:
         messagebox.showinfo("Subscriptions", "You haven't subscribed to any courses yet.")
         return
-    
-    # Create subscription view window
     subscription_view = tk.Toplevel(root)
     subscription_view.title("Your Subscriptions")
     subscription_view.geometry("500x400")
@@ -370,7 +346,6 @@ def view_subscriptions():
     notebook = ttk.Notebook(subscription_view)
     notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
     
-    # Parse subscribed courses
     courses = response.split("|")
     
     # Create a tab for each course
@@ -421,14 +396,13 @@ def view_subscriptions():
         
         all_resources_text.config(state=tk.DISABLED)
 
-# Add new buttons to student dashboard
 tk.Button(student_frame, text="View All Courses", command=view_courses).pack(pady=10)
 tk.Button(student_frame, text="Get Course Resources", command=get_resources).pack(pady=10)
 tk.Button(student_frame, text="Subscribe to Course", command=subscribe_to_course).pack(pady=10)
 tk.Button(student_frame, text="View My Subscriptions", command=view_subscriptions).pack(pady=10)
 tk.Button(student_frame, text="Logout", command=lambda: show_frame(login_frame)).pack(pady=10)
 
-# INSTRUCTOR DASHBOARD (slightly updated)
+# INSTRUCTOR DASHBOARD
 def instructor_welcome_label():
     welcome_label = tk.Label(instructor_frame, text=f"Welcome, Instructor {current_user['username']}!", font=("Arial", 14, "bold"))
     welcome_label.pack(pady=10)
@@ -438,19 +412,16 @@ def instructor_welcome_label():
 welcome_label_instructor = instructor_welcome_label()
 
 def upload_resource():
-    # Create a simple pop-up window to upload resource
     upload_window = tk.Toplevel(root)
     upload_window.title("Upload Course Resource")
     upload_window.geometry("300x200")
-    
-    # Course ID label and entry
+
     course_id_label = tk.Label(upload_window, text="Course ID:")
     course_id_label.pack(pady=5)
     
     course_id_entry = tk.Entry(upload_window, width=20)
     course_id_entry.pack(pady=5)
-    
-    # Resource URL label and entry
+
     resource_url_label = tk.Label(upload_window, text="Resource URL:")
     resource_url_label.pack(pady=5)
     
@@ -463,7 +434,7 @@ def upload_resource():
         
         if not course_id or not resource_url:
             messagebox.showerror("Error", "Please enter all fields!")
-            show_splash_image("no_entry1.png", 2000)
+            show_splash_image("no_entry2.png", 2000)
             return
             
         response = client.send_request(f"UPLOAD_RESOURCE {course_id} {resource_url} {current_user['username']}")
@@ -472,7 +443,7 @@ def upload_resource():
         if "Added" in response:
             upload_window.destroy()
         else:
-            show_splash_image("no_entry1.png", 2000)
+            show_splash_image("no_entry2.png", 2000)
     
     tk.Button(upload_window, text="Upload", command=handle_upload).pack(pady=10)
     tk.Button(upload_window, text="Cancel", command=upload_window.destroy).pack(pady=5)
@@ -481,8 +452,6 @@ tk.Button(instructor_frame, text="Upload Course Resources", command=upload_resou
 tk.Button(instructor_frame, text="View All Courses", command=view_courses).pack(pady=10)
 tk.Button(instructor_frame, text="Logout", command=lambda: show_frame(login_frame)).pack(pady=10)
 
-# Start with login screen
 show_frame(login_frame)
 
-# Run the application
 root.mainloop()
